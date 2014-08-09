@@ -142,7 +142,12 @@ module Grape
         vendor_prefix_pattern = /vnd\.[^+]+\+/
 
         accept.scan(accept_into_mime_and_quality)
-          .sort_by { |_, quality_preference| -quality_preference.to_f }
+          .map{ |_,quality| [_, quality ? quality.to_f : 1.0] }
+          .each_with_object([[],[]]) { |(type, quality), memo|
+            (quality < 1.0 ? memo[0] : memo[1] ) << [type, quality]
+          }
+          .inject { |low,high| high + low }
+          .sort_by { |_, quality| -quality }
           .map { |mime, _| mime.sub(vendor_prefix_pattern, '') }
       end
     end

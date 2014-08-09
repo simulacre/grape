@@ -45,6 +45,7 @@ describe Grape::Middleware::Formatter do
 
       subject.call('PATH_INFO' => '/somewhere.xml', 'HTTP_ACCEPT' => 'application/json').last.each { |b| expect(b).to eq('<bar/>') }
     end
+
   end
 
   context 'error handling' do
@@ -125,7 +126,19 @@ describe Grape::Middleware::Formatter do
 
     it 'handles quality rankings mixed with nothing' do
       subject.call('PATH_INFO' => '/info', 'HTTP_ACCEPT' => 'application/json,application/xml; q=1.0')
+      expect(subject.env['api.format']).to eq(:json)
+    end
+
+    it 'handles quality rankings less than 1.0 mixed with nothing' do
+      subject.call('PATH_INFO' => '/info', 'HTTP_ACCEPT' => 'application/xml,application/json; q=0.8')
       expect(subject.env['api.format']).to eq(:xml)
+    end
+
+    # The accept header here is very similar to the one submitted by webkit and
+    # other browsers. In those cases application/rss+xml would be text/html.
+    it 'handles quality rankings less than 1.0 mixed with nothing' do
+      subject.call('PATH_INFO' => '/info', 'HTTP_ACCEPT' => 'application/rss+xml,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+      expect(subject.env['api.format']).to eq(:rss)
     end
 
     it 'parses headers with other attributes' do
